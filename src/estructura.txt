@@ -1,0 +1,40 @@
+/src
+│
+├── /assets            # Imágenes, íconos, fuentes, etc.
+│
+├── /components        # Componentes reutilizables (botones, inputs, modales, cards, etc.)
+│   ├── Button.jsx
+│   └── InputField.jsx
+│
+├── /layout            # Estructura común (Header, Sidebar, Footer, etc.)
+│   ├── Header.jsx
+│   ├── Sidebar.jsx
+│   └── Footer.jsx
+│
+├── /pages             # Páginas principales del sistema:es donde van las vistas principales completas de tu aplicación
+│   ├── Login.jsx
+│   ├── Dashboard.jsx
+│   └── AlumnoPage.jsx
+│
+├── /modules           # Opcional: subcarpetas por módulo si el proyecto crece
+│   ├── alumno/
+│   │   ├── AlumnoPage.jsx
+│   │   ├── AlumnoCard.jsx
+│   │   └── alumnoService.js
+│   ├── profesor/
+│   │   └── ...
+│
+├── /services          # Lógica para consumir API (GET, POST, PUT, DELETE)
+│   ├── api.js         # Config base (axios, token, etc.)
+│   ├── alumnoService.js
+│   └── profesorService.js
+│
+├── /hooks             # Hooks personalizados (opcional)
+│   └── useAuth.js
+│
+├── /utils             # Funciones auxiliares (formatear fechas, validaciones, etc.)
+│   └── formatDate.js
+│
+├── App.jsx            # Enrutamiento principal (React Router)
+├── index.jsx          # Entrada principal
+└── tailwind.config.js # Configuración de estilos (si usas Tailwind)
