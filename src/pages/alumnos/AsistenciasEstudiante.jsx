@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { obtenerAsistenciasAlumno } from "../../services/alumnoService";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer
+} from "recharts";
 
 const AsistenciasEstudiante = ({ alumnoId }) => {
   const [datosAlumno, setDatosAlumno] = useState(null);
   const [gestionSeleccionada, setGestionSeleccionada] = useState("");
+  const [graficosVisibles, setGraficosVisibles] = useState({});
 
   useEffect(() => {
     const fetchAsistencias = async () => {
@@ -15,35 +19,38 @@ const AsistenciasEstudiante = ({ alumnoId }) => {
         console.error("Error al obtener asistencias del alumno:", error);
       }
     };
-
     fetchAsistencias();
   }, [alumnoId]);
 
-  if (!datosAlumno) return <p>Cargando asistencias del alumno...</p>;
+  const toggleGrafico = (clave) => {
+    setGraficosVisibles((prev) => ({
+      ...prev,
+      [clave]: !prev[clave]
+    }));
+  };
+
+  if (!datosAlumno) return <p className="p-4 text-gray-500">Cargando asistencias del alumno...</p>;
 
   const gestionesDisponibles = Object.keys(datosAlumno.asistencias || {});
-
   const gestionesFiltradas = gestionesDisponibles.filter(
-    (gestion) => gestionSeleccionada === "" || gestion === gestionSeleccionada
+    (g) => gestionSeleccionada === "" || g === gestionSeleccionada
   );
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">
-        Asistencias de {datosAlumno.alumno_nombre}
-      </h1>
+    <div className="p-4 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">📅 Asistencias de {datosAlumno.alumno_nombre}</h1>
 
-      <div className="mb-4">
-        <label className="font-semibold mr-2">Seleccionar gestión:</label>
+      <div className="mb-6">
+        <label className="font-medium mr-2">Seleccionar gestión:</label>
         <select
-          className="border px-2 py-1 rounded"
+          className="border px-3 py-2 rounded text-sm"
           value={gestionSeleccionada}
           onChange={(e) => setGestionSeleccionada(e.target.value)}
         >
           <option value="">-- Todas --</option>
-          {gestionesDisponibles.map((gestion) => (
-            <option key={gestion} value={gestion}>
-              {gestion} ({datosAlumno.asistencias[gestion].estado})
+          {gestionesDisponibles.map((g) => (
+            <option key={g} value={g}>
+              {g} ({datosAlumno.asistencias[g].estado})
             </option>
           ))}
         </select>
@@ -53,75 +60,86 @@ const AsistenciasEstudiante = ({ alumnoId }) => {
         const datosGestion = datosAlumno.asistencias[gestion];
 
         return (
-          <div key={gestion} className="mb-6 border p-4 rounded shadow">
-            <h2 className="text-xl font-semibold mb-2">
+          <div key={gestion} className="mb-8 border rounded shadow p-4 bg-white">
+            <h2 className="text-xl font-semibold mb-3 text-blue-700">
               Gestión {gestion}{" "}
-              <span className="text-sm text-gray-500">
-                ({datosGestion.estado})
-              </span>
+              <span className="text-sm text-gray-500">({datosGestion.estado})</span>
             </h2>
 
             {Object.entries(datosGestion.grados).map(([gradoNombre, gradoData]) => {
               const { estado_aprobacion, periodos } = gradoData;
 
               const materiasMap = {};
-
               Object.entries(periodos).forEach(([periodoNombre, materias]) => {
                 Object.entries(materias).forEach(([materiaNombre, listaAsistencias]) => {
                   if (!materiasMap[materiaNombre]) {
                     materiasMap[materiaNombre] = [];
                   }
-                  listaAsistencias.forEach((asistencia) => {
+                  listaAsistencias.forEach((a) => {
                     materiasMap[materiaNombre].push({
                       periodo: periodoNombre,
-                      valor: asistencia.valor,
+                      asistencia: a.valor,
+                      falta: 100 - a.valor
                     });
                   });
                 });
               });
 
               return (
-                <div key={gradoNombre} className="mb-4">
-                  <h3 className="text-lg font-bold mb-1">{gradoNombre}</h3>
-                  <p className="text-sm text-blue-600 mb-2">
-                    Estado de aprobación: <strong>{estado_aprobacion}</strong>
-                  </p>
+                <div key={gradoNombre} className="mb-6">
+                  <h3 className="text-lg font-bold text-gray-700 mb-2">
+                    {gradoNombre}{" "}
+                    <span className="text-sm text-gray-500 italic">
+                      ({estado_aprobacion})
+                    </span>
+                  </h3>
 
-                  {Object.keys(materiasMap).length === 0 ? (
-                    <p className="text-gray-500 italic">
-                      No hay asistencias registradas.
-                    </p>
-                  ) : (
-                    Object.entries(materiasMap).map(([materiaNombre, valores]) => (
-                      <div key={materiaNombre} className="mb-6 p-3 border rounded">
-                        <h4 className="text-md font-semibold mb-1">
-                          {materiaNombre}
-                        </h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {Object.entries(materiasMap).map(([materiaNombre, asistencias]) => {
+                      const clave = `${gestion}-${gradoNombre}-${materiaNombre}`;
 
-                        <ul className="list-disc pl-6 mb-2">
-                          {valores.map((a, idx) => (
-                            <li key={idx}>
-                              {a.periodo}: <strong>{a.valor}%</strong>
-                            </li>
-                          ))}
-                        </ul>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={valores}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="periodo" />
-                            <YAxis domain={[0, 100]} />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="valor" fill="#4caf50" name="Asistencia" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ))
-                  )}
+                      return (
+                        <div key={materiaNombre} className="border rounded-lg p-4 shadow-sm bg-gray-50">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-md font-semibold">{materiaNombre}</h4>
+                            <button
+                              onClick={() => toggleGrafico(clave)}
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              {graficosVisibles[clave] ? "Ocultar gráfico" : "Ver gráfico"}
+                            </button>
+                          </div>
+
+                          <ul className="list-disc pl-5 text-sm text-gray-700">
+                            {asistencias.map((a, idx) => (
+                              <li key={idx}>
+                                {a.periodo}: <strong>{a.asistencia}%</strong>
+                              </li>
+                            ))}
+                          </ul>
+
+                          {graficosVisibles[clave] && (
+                            <div className="mt-3">
+                              <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={asistencias}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="periodo" />
+                                  <YAxis domain={[0, 100]} />
+                                  <Tooltip />
+                                  <Legend />
+                                  <Bar dataKey="asistencia" fill="#4CAF50" name="Asistencia (%)" />
+                                  <Bar dataKey="falta" fill="#F44336" name="Faltas (%)" />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
-
           </div>
         );
       })}

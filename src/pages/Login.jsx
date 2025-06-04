@@ -22,6 +22,7 @@ const Login = () => {
       });
 
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("rol", res.data.usuario.rol);
       navigate("/panel");
 
     } catch (err) {
